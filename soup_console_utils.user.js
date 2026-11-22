@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Soup's JS Console Utils
 // @namespace    https://github.com/the-can-of-soup
-// @version      1.0.2
+// @version      1.0.3
 // @description  Miscellaneous helpful JS utilities for browser consoles.
 // @author       the-can-of-soup
 // @match        https://*/*
@@ -70,18 +70,20 @@
             return window.soupConsoleUtils.renameFunc(wrapped, func.name);
         },
 
-        crawlObject(root, handler, prototypes = false, _path = null, _discovered = null) {
-            // Recursively crawl an object's items and call a handler for each. Duplicate objects are
-            // skipped, so self-referential objects may be safely crawled.
+        crawlObject(root, handler, prototypes = false, getters = false, _path = null, _discovered = null) {
+            // Recursively crawl an object's properties and call a handler for each. Duplicate objects
+            // are skipped, so self-referential objects may be safely crawled.
             //
             // - `root`: Object to crawl.
-            // - `handler`: Function to call for each item. It is passed two arguments:
-            //   - `value`: Value.
+            // - `handler`: Function to call for each property. It is passed two arguments:
+            //   - `value`: Property value.
             //   - `path`: Array of keys to get to the value from the root, ordered from shallow to
             //     deep.
             //   - Return: If true, the value and path are logged to the console.
             // - `prototypes`: If true, prototypes of objects will also be crawled. This step in `path`
             //   is represented by `null`.
+            // - `getters`: If true, properties with `get` handlers are also crawled. If 'log', errors
+            //   in `get` handlers are also logged.
 
             _path ??= [];
             _discovered ??= [];
@@ -106,13 +108,13 @@
             for (let key in root) {
                 let value = root[key];
                 let subPath = _path.concat([key]);
-                window.soupConsoleUtils.crawlObject(value, handler, prototypes, subPath, _discovered);
+                window.soupConsoleUtils.crawlObject(value, handler, prototypes, getters, subPath, _discovered);
             }
 
             if (prototypes) {
                 let value = Object.getPrototypeOf(root);
                 let subPath = _path.concat([null]);
-                window.soupConsoleUtils.crawlObject(value, handler, prototypes, subPath, _discovered)
+                window.soupConsoleUtils.crawlObject(value, handler, prototypes, getters, subPath, _discovered)
             }
         },
 
@@ -145,6 +147,5 @@
         },
     };
 
-    console.log('[Soup\'s JS Console Utils] Loaded; utilities are exposed at `soupConsoleUtils`.'
-        + ' Read the userscript source code for comments explaining the usage of these.');
+    console.log('[Soup\'s JS Console Utils] Loaded; utilities are exposed at `soupConsoleUtils`.');
 })();
