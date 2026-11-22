@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Soup's JS Console Utils
 // @namespace    https://github.com/the-can-of-soup
-// @version      1.0.0
+// @version      1.0.1
 // @description  Miscellaneous helpful JS utilities for browser consoles.
 // @author       the-can-of-soup
 // @match        https://*/*
@@ -132,6 +132,8 @@
                 if (path.length === 0) return;
 
                 let key = path[path.length - 1];
+                if (key === null) return;
+
                 if (typeof substr === 'string') {
                     if (!caseSensitive) key = key.toLowerCase();
                     return key.includes(substr);
