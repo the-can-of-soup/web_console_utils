@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Soup's JS Console Utils
 // @namespace    https://github.com/the-can-of-soup
-// @version      1.0.1
+// @version      1.0.2
 // @description  Miscellaneous helpful JS utilities for browser consoles.
 // @author       the-can-of-soup
 // @match        https://*/*
@@ -100,7 +100,7 @@
                 console.log(...pathDisplay, '=', root);
             }
 
-            if (typeof root !== 'object') return;
+            if (typeof root !== 'object' || root === null) return;
             _discovered.push(root);
 
             for (let key in root) {
