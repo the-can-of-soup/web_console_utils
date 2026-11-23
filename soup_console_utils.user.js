@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Soup's JS Console Utils
 // @namespace    https://github.com/the-can-of-soup
-// @version      1.3.2
+// @version      1.4.0
 // @description  Miscellaneous helpful JS utilities for browser consoles.
 // @author       the-can-of-soup
 // @match        https://*/*
@@ -21,12 +21,14 @@
             }[name];
         },
 
-        logWrapper(func, name) {
+        logWrapper(func, name = null) {
             // Return a wrapped version of function `func` that will log to the console whenever it is
-            // called.
+            // called, and when it returns or throws.
             //
             // - `name` is optional and defaults to `func.name`; it determines the name used to identify
             //   the function in logs.
+
+            const effectiveName = name ?? func.name;
 
             function wrapped(...args) {
                 let argsDisplay = [];
@@ -36,9 +38,46 @@
                 }
                 argsDisplay.pop();
 
-                console.log(`${name ?? func.name}(`, ...argsDisplay, ')');
-                let ret = func.call(this, ...args);
-                console.log(`${name ?? func.name} ->`, ret);
+                console.log(`${effectiveName}(`, ...argsDisplay, ')');
+                try {
+                    let ret = func.call(this, ...args);
+                } catch (err) {
+                    console.log(`${effectiveName} throw ->`, err);
+                    throw err;
+                }
+
+                console.log(`${effectiveName} ->`, ret);
+                return ret;
+            }
+
+            return window.soupConsoleUtils.renameFunc(wrapped, func.name);
+        },
+
+        asyncLogWrapper(func, name = null) {
+            // Asynchronous version of `logWrapper`. While `logWrapper` can handle async functions, it
+            // will log the promise as a return value instead of awaiting it.
+            //
+            // Return a wrapped version of async function `func` that will log to the console whenever
+            // it is called, and when it resolves or rejects.
+
+            const effectiveName = name ?? func.name;
+
+            async function wrapped(...args) {
+                let argsDisplay = [];
+                for (let arg of args) {
+                    argsDisplay.push(arg);
+                    argsDisplay.push(',');
+                }
+                argsDisplay.pop();
+
+                console.log(`await ${effectiveName}(`, ...argsDisplay, ')');
+                try {
+                    let ret = await func.call(this, ...args);
+                } catch (err) {
+                    console.log(`await ${effectiveName} reject ->`, err);
+                    throw err;
+                }
+                console.log(`await ${effectiveName} ->`, ret);
 
                 return ret;
             }
