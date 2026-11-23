@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Soup's JS Console Utils
 // @namespace    https://github.com/the-can-of-soup
-// @version      1.6.1
+// @version      1.6.2
 // @description  Miscellaneous helpful JS utilities for browser consoles.
 // @author       the-can-of-soup
 // @match        https://*/*
@@ -24,7 +24,7 @@
 
             const wrapped = {
                 [func.name](...args) {
-                    handler(() => func.call(this, ...args), args);
+                    return handler(() => func.call(this, ...args), args);
                 }
             }[func.name];
             wrapped.orig = func;
@@ -47,7 +47,7 @@
 
             const wrapped = {
                 async [func.name](...args) {
-                    await handler(async () => await func.call(this, ...args), args);
+                    return await handler(async () => await func.call(this, ...args), args);
                 }
             }[func.name];
             wrapped.orig = func;
