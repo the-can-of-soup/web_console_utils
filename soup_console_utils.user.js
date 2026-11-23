@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Soup's JS Console Utils
 // @namespace    https://github.com/the-can-of-soup
-// @version      1.4.1
+// @version      1.5.0
 // @description  Miscellaneous helpful JS utilities for browser consoles.
 // @author       the-can-of-soup
 // @match        https://*/*
@@ -13,12 +13,66 @@
     'use strict';
 
     window.soupConsoleUtils = {
-        renameFunc(func, name) {
-            // Return a wrapped version of function `func` that has name `name`.
+        wrap(func, handler) {
+            // Wrap function `func` using `handler`. The original unwrapped function may then be
+            // accessed using `func.orig`.
+            //
+            // - `handler`: Function defining the wrapper behavior. It is passed two arguments:
+            //   - `body`: Function that takes no arguments that will run the unwrapped function,
+            //     passing along `this` and `args`, and returning its return value.
+            //   - `args`: Arguments passed to the wrapped function.
 
-            return {
+            const wrapped = {
+                [func.name](...args) {
+                    handler(() => func.call(this, ...args), args);
+                }
+            }[func.name];
+            wrapped.orig = func;
+
+            return wrapped;
+        },
+
+        asyncWrap(func, handler) {
+            // Asynchronous version of `wrap`.
+            //
+            // Wrap async function `func` using `handler`. The original unwrapped function may
+            // then be accessed using `func.orig`.
+            //
+            // - `handler`: Async function defining the wrapper behavior. It is passed two
+            //   arguments:
+            //   - `body`: Async function that takes no arguments that will run the unwrapped
+            //     function, passing along `this` and `args`, and resolving/rejecting what it
+            //     does.
+            //   - `args`: Arguments passed to the wrapped function.
+
+            const wrapped = {
+                async [func.name](...args) {
+                    await handler(async () => await func.call(this, ...args), args);
+                }
+            }[func.name];
+            wrapped.orig = func;
+
+            return wrapped;
+        },
+
+        wrapInPlace(obj, key, wrapper, ...args) {
+            // Apply wrapper func `wrapper` to value `obj[key]` and replace it in `obj`.
+            //
+            // - `args`: Additional arguments to pass to `wrapper`.
+
+            obj[key] = wrapper(obj[key], ...args);
+        },
+
+        renameFunc(func, name) {
+            // Return a wrapped version of function `func` that has name `name`. The original unwrapped
+            // function can then be accessed with the `orig` property of the wrapped function.
+
+            const wrapped = {
                 [name](...args) { return func.call(this, ...args); }
             }[name];
+            wrapped.orig = func;
+
+            return wrapped;
         },
 
         logWrapper(func, name = null) {
@@ -30,7 +84,7 @@
 
             const effectiveName = name ?? func.name;
 
-            function wrapped(...args) {
+            return window.soupConsoleUtils.wrap(func, function(body, args) {
                 let argsDisplay = [];
                 for (let arg of args) {
                     argsDisplay.push(arg);
@@ -41,7 +95,7 @@
                 console.log(`${effectiveName}(`, ...argsDisplay, ')');
                 let ret;
                 try {
-                    ret = func.call(this, ...args);
+                    ret = body();
                 } catch (err) {
                     console.log(`${effectiveName} throw ->`, err);
                     throw err;
@@ -49,21 +103,18 @@
 
                 console.log(`${effectiveName} ->`, ret);
                 return ret;
-            }
-
-            return window.soupConsoleUtils.renameFunc(wrapped, func.name);
+            });
         },
 
         asyncLogWrapper(func, name = null) {
-            // Asynchronous version of `logWrapper`. While `logWrapper` can handle async functions, it
-            // will log the promise as a return value instead of awaiting it.
+            // Asynchronous version of `logWrapper`.
             //
             // Return a wrapped version of async function `func` that will log to the console whenever
             // it is called, and when it resolves or rejects.
 
             const effectiveName = name ?? func.name;
 
-            async function wrapped(...args) {
+            return window.soupConsoleUtils.asyncWrap(func, async function(body, args) {
                 let argsDisplay = [];
                 for (let arg of args) {
                     argsDisplay.push(arg);
@@ -74,7 +125,7 @@
                 console.log(`await ${effectiveName}(`, ...argsDisplay, ')');
                 let ret;
                 try {
-                    ret = await func.call(this, ...args);
+                    ret = await body();
                 } catch (err) {
                     console.log(`await ${effectiveName} reject ->`, err);
                     throw err;
@@ -82,17 +133,7 @@
                 console.log(`await ${effectiveName} ->`, ret);
 
                 return ret;
-            }
-
-            return window.soupConsoleUtils.renameFunc(wrapped, func.name);
-        },
-
-        wrapInPlace(obj, key, wrapper, ...args) {
-            // Apply wrapper func `wrapper` to value `obj[key]` and replace it in `obj`.
-            //
-            // - `args`: Additional arguments to pass to `wrapper`.
-
-            obj[key] = wrapper(obj[key], ...args);
+            });
         },
 
         injectBreakpoint(func, after = false) {
@@ -100,15 +141,30 @@
             //
             // - `after`: If true, a breakpoint is added after `func` as well as before.
 
-            function wrapped(...args) {
+            return window.soupConsoleUtils.wrap(func, function(body, args) {
                 debugger;
-                let ret = func.call(this, ...args);
+                let ret = body();
                 if (after) debugger;
 
                 return ret;
-            }
+            });
+        },
 
-            return window.soupConsoleUtils.renameFunc(wrapped, func.name);
+        asyncInjectBreakpoint(func, after = false) {
+            // Asynchronous version of `injectBreakpoint`.
+            //
+            // Return a wrapped version of async function `func` with a breakpoint added
+            // before it.
+            //
+            // - `after`: If true, a breakpoint is added after `func` as well as before.
+
+            return window.soupConsoleUtils.asyncWrap(func, async function(body, args) {
+                debugger;
+                let ret = await body();
+                if (after) debugger;
+
+                return ret;
+            });
         },
 
         getAllPropertyNames(obj) {
