@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Soup's JS Console Utils
 // @namespace    https://github.com/the-can-of-soup
-// @version      1.3.0
+// @version      1.3.1
 // @description  Miscellaneous helpful JS utilities for browser consoles.
 // @author       the-can-of-soup
 // @match        https://*/*
@@ -88,7 +88,7 @@
         getInheritedPropertyDescriptor(obj, key) {
             // Return the property descriptor of property with name `key` on object `obj`, including
             // inherited properties. Return is the same format as `Object.getOwnPropertyDescriptor`.
-            
+
             let descriptor = undefined;
             while (descriptor === undefined && obj !== null) {
                 descriptor = Object.getOwnPropertyDescriptor(obj, key);
@@ -143,7 +143,7 @@
             if (typeof root !== 'object' || root === null) return;
             _discovered.push(root);
 
-            if (_path.length >= maxDepth) return;
+            if (maxDepth !== null && _path.length >= maxDepth) return;
 
             for (const key of inherited ? window.soupConsoleUtils.getAllPropertyNames(root) : Object.getOwnPropertyNames(root)) {
                 let value;
