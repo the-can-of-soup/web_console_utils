@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Soup's JS Console Utils
 // @namespace    https://github.com/the-can-of-soup
-// @version      1.3.1
+// @version      1.3.2
 // @description  Miscellaneous helpful JS utilities for browser consoles.
 // @author       the-can-of-soup
 // @match        https://*/*
@@ -21,7 +21,7 @@
             }[name];
         },
 
-        funcLogWrapper(func, name) {
+        logWrapper(func, name) {
             // Return a wrapped version of function `func` that will log to the console whenever it is
             // called.
             //
