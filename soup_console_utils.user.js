@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Soup's JS Console Utils
 // @namespace    https://github.com/the-can-of-soup
-// @version      1.1.0
+// @version      1.2.0
 // @description  Miscellaneous helpful JS utilities for browser consoles.
 // @author       the-can-of-soup
 // @match        https://*/*
@@ -107,7 +107,7 @@
 
         crawlObject(root, handler, options = {}, _path = null, _discovered = null) {
 
-            const {inherited = true, nonenumerable = true, getters = false, prototypes = false} = options;
+            const {inherited = true, nonenumerable = true, getters = false, prototypes = false, maxDepth = null} = options;
 
             // Recursively crawl an object's properties and call a handler for each. Duplicate objects
             // are skipped, so self-referential objects may be safely crawled.
@@ -126,6 +126,8 @@
             //     `get` handlers are also logged as warnings.
             //   - `prototypes`: Whether to crawl prototypes of objects. This step in the `path`
             //     passed to `handler` is represented by `null`.
+            //   - `maxDepth`: Maximum depth of the search; values at this depth are handled, but no
+            //     deeper. Null removes the limit.
 
             _path ??= [];
             _discovered ??= [];
@@ -139,6 +141,8 @@
 
             if (typeof root !== 'object' || root === null) return;
             _discovered.push(root);
+
+            if (_path.length >= maxDepth) return;
 
             for (const key of inherited ? window.soupConsoleUtils.getAllPropertyNames(root) : Object.getOwnPropertyNames(root)) {
                 let value;
