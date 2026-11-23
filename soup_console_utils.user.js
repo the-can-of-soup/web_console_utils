@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Soup's JS Console Utils
 // @namespace    https://github.com/the-can-of-soup
-// @version      1.4.0
+// @version      1.4.1
 // @description  Miscellaneous helpful JS utilities for browser consoles.
 // @author       the-can-of-soup
 // @match        https://*/*
@@ -39,8 +39,9 @@
                 argsDisplay.pop();
 
                 console.log(`${effectiveName}(`, ...argsDisplay, ')');
+                let ret;
                 try {
-                    let ret = func.call(this, ...args);
+                    ret = func.call(this, ...args);
                 } catch (err) {
                     console.log(`${effectiveName} throw ->`, err);
                     throw err;
@@ -71,8 +72,9 @@
                 argsDisplay.pop();
 
                 console.log(`await ${effectiveName}(`, ...argsDisplay, ')');
+                let ret;
                 try {
-                    let ret = await func.call(this, ...args);
+                    ret = await func.call(this, ...args);
                 } catch (err) {
                     console.log(`await ${effectiveName} reject ->`, err);
                     throw err;
