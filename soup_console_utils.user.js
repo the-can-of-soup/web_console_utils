@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Soup's JS Console Utils
 // @namespace    https://github.com/the-can-of-soup
-// @version      1.2.0
+// @version      1.3.0
 // @description  Miscellaneous helpful JS utilities for browser consoles.
 // @author       the-can-of-soup
 // @match        https://*/*
@@ -85,6 +85,18 @@
             return keys;
         },
 
+        getInheritedPropertyDescriptor(obj, key) {
+            // Return the property descriptor of property with name `key` on object `obj`, including
+            // inherited properties. Return is the same format as `Object.getOwnPropertyDescriptor`.
+            
+            let descriptor = undefined;
+            while (descriptor === undefined && obj !== null) {
+                descriptor = Object.getOwnPropertyDescriptor(obj, key);
+                obj = Object.getPrototypeOf(obj);
+            }
+            return descriptor;
+        },
+
         _crawlObjectPathDisplay(path) {
             let pathDisplay = ['<root>', '.'];
             for (let key of path) {
@@ -96,19 +108,8 @@
             return pathDisplay;
         },
 
-        _getInheritedPropertyDescriptor(obj, key) {
-            let descriptor = undefined;
-            while (descriptor === undefined && obj !== null) {
-                descriptor = Object.getOwnPropertyDescriptor(obj, key);
-                obj = Object.getPrototypeOf(obj);
-            }
-            return descriptor;
-        },
-
         crawlObject(root, handler, options = {}, _path = null, _discovered = null) {
-
             const {inherited = true, nonenumerable = true, getters = false, prototypes = false, maxDepth = null} = options;
-
             // Recursively crawl an object's properties and call a handler for each. Duplicate objects
             // are skipped, so self-referential objects may be safely crawled.
             //
@@ -148,7 +149,7 @@
                 let value;
                 const subPath = _path.concat([key]);
 
-                const descriptor = window.soupConsoleUtils._getInheritedPropertyDescriptor(root, key);
+                const descriptor = window.soupConsoleUtils.getInheritedPropertyDescriptor(root, key);
                 if (!descriptor.enumerable) {
                     // Property is non-enumerable
                     if (!nonenumerable) continue;
@@ -180,7 +181,7 @@
 
         crawlMatch(substr, caseSensitive = false) {
             // Return a handler for `crawlObject` that logs each value whose key contains the
-            // substring or regexp `substr`.
+            // substring or matches the regexp `substr`.
             //
             // - `substr`: Substring or regular expression to test against each key.
             // - `caseSensitive`: For string values of `substr`, whether the matching is case-
