@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Soup's JS Console Utils
 // @namespace    https://github.com/the-can-of-soup
-// @version      1.6.0
+// @version      1.6.1
 // @description  Miscellaneous helpful JS utilities for browser consoles.
 // @author       the-can-of-soup
 // @match        https://*/*
@@ -65,7 +65,8 @@
 
         wrapAllMethods(obj, wrapper, ...args) {
             // Apply wrapper func `wrapper` to all function properties of object `obj`. The wrapped
-            // methods are set directly on the object. Inherited methods are unaffected.
+            // methods are set directly on the object. Inherited methods are unaffected. `constructor`
+            // is unaffected.
             //
             // - `args`: Additional arguments to pass to `wrapper`.
             // - Return the names of the methods that were wrapped, as an array.
@@ -73,6 +74,7 @@
             const methNames = [];
             
             for (let key of Object.getOwnPropertyNames(obj)) {
+                if (key === 'constructor') continue;
                 let meth = obj[key];
                 if (typeof meth !== 'function') continue;
                 obj[key] = wrapper(meth, ...args);
