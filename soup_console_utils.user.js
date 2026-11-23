@@ -88,7 +88,7 @@
         },
 
         wrapInPlace(obj, key, wrapper, ...args) {
-            // Apply wrapper func `wrapper` to object `obj[key]` and replace it in `obj`.
+            // Apply wrapper func `wrapper` to value `obj[key]` and replace it in `obj`.
             //
             // - `args`: Additional arguments to pass to `wrapper`.
 
