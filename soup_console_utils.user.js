@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Soup's JS Console Utils
 // @namespace    https://github.com/the-can-of-soup
-// @version      1.6.2
+// @version      1.7.0
 // @description  Miscellaneous helpful JS utilities for browser consoles.
 // @author       the-can-of-soup
 // @match        https://*/*
@@ -95,6 +95,12 @@
             wrapped.orig = func;
 
             return wrapped;
+        },
+
+        unwrap(func) {
+            // Return `func.orig`. Useful when used as a handler for functions like `wrapInPlace`.
+
+            return func.orig;
         },
 
         logWrapper(func, name = null) {
