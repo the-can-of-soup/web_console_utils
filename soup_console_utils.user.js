@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Soup's JS Console Utils
 // @namespace    https://github.com/the-can-of-soup
-// @version      1.8.2
+// @version      1.8.3
 // @description  Miscellaneous helpful JS utilities for browser consoles.
 // @author       the-can-of-soup
 // @match        https://*/*
@@ -277,7 +277,7 @@
             if (shouldLog) {
                 console.log(...window.soupConsoleUtils._crawlObjectPathDisplay(_path), '=', root);
 
-                for (let ancestor of ancestors) {
+                for (let ancestor of _ancestors) {
                     if (!_loggedObjs.includes(ancestor)) _loggedObjs.push(ancestor);
                 }
                 _loggedObjs.push(root);
