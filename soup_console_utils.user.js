@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Soup's JS Console Utils
 // @namespace    https://github.com/the-can-of-soup
-// @version      1.8.0
+// @version      1.8.1
 // @description  Miscellaneous helpful JS utilities for browser consoles.
 // @author       the-can-of-soup
 // @match        https://*/*
@@ -233,7 +233,7 @@
             return pathDisplay;
         },
 
-        crawlObject(root, handler, options = {}, _path = null, _ancestors = null) {
+        crawlObject(root, handler, options = {}, _path = null, _ancestors = null, _loggedObjs = null) {
             const {inherited = true, nonenumerable = true, getters = false, prototypes = false, maxDepth = null} = options;
             // Recursively crawl an object's properties and call a handler for each. Cyclical
             // references to objects are skipped, so self-referential objects may be safely crawled.
@@ -243,7 +243,9 @@
             //   - `value`: Property value.
             //   - `path`: Array of keys to get to the value from the root, ordered from shallow to
             //     deep.
-            //   - Return: If true, the value and path are logged to the console.
+            //   - Return: If true, the value and path are logged to the console. Once an object is
+            //     logged once, duplicate occurrences of that object will be logged with a "duplicate"
+            //     label, but not crawled.
             // - `options`: Options for what to include:
             //   - `inherited`: Whether to crawl inherited properties.
             //   - `nonenumerable`: Whether to crawl non-enumerable properties. `__proto__` is never
@@ -257,13 +259,21 @@
 
             _path ??= [];
             _ancestors ??= [];
+            _loggedObjs ??= [];
 
             // Cyclical reference
             if (_ancestors.includes(root)) return;
 
+            const alreadyLogged = _loggedObjs.includes(root);
+            if (alreadyLogged) {
+                console.log(...window.soupConsoleUtils._crawlObjectPathDisplay(_path), '(duplicate)');
+                return;
+            }
+            
             const shouldLog = handler(root, _path);
             if (shouldLog) {
                 console.log(...window.soupConsoleUtils._crawlObjectPathDisplay(_path), '=', root);
+                _loggedObjs.push(root);
             }
 
             if (typeof root !== 'object' || root === null) return;
@@ -293,13 +303,13 @@
                     value = root[key];
                 }
 
-                window.soupConsoleUtils.crawlObject(value, handler, options, subPath, _ancestors.concat([root]));
+                window.soupConsoleUtils.crawlObject(value, handler, options, subPath, _ancestors.concat([root]), _loggedObjs);
             }
 
             if (prototypes) {
                 const value = Object.getPrototypeOf(root);
                 const subPath = _path.concat([null]);
-                window.soupConsoleUtils.crawlObject(value, handler, options, subPath, _ancestors.concat([root]));
+                window.soupConsoleUtils.crawlObject(value, handler, options, subPath, _ancestors.concat([root]), _loggedObjs);
             }
         },
 
