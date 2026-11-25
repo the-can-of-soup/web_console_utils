@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Soup's JS Console Utils
 // @namespace    https://github.com/the-can-of-soup
-// @version      1.8.3
+// @version      1.9.0
 // @description  Miscellaneous helpful JS utilities for browser consoles.
 // @author       the-can-of-soup
 // @match        https://*/*
@@ -234,7 +234,8 @@
         },
 
         crawlObject(root, handler, options = {}, _path = null, _ancestors = null, _discovered = null, _loggedObjs = null) {
-            const {inherited = true, nonenumerable = true, getters = false, prototypes = false, maxDepth = null} = options;
+            const {inherited = true, nonenumerable = true, getters = false, prototypes = false, maxDepth = null,
+                logDuplicates = true} = options;
             // Recursively crawl an object's properties and call a handler for each. Duplicate
             // references to objects are skipped, so self-referential objects may be safely crawled.
             //
@@ -256,6 +257,9 @@
             //     passed to `handler` is represented by `null`.
             //   - `maxDepth`: Maximum depth of the search; values at this depth are handled, but no
             //     deeper. Null removes the limit.
+            //   - `logDuplicates`: If false, disables logging duplicate references to objects that
+            //     were already logged, and logging duplicate references to ancestors of those
+            //     objects.
 
             _path ??= [];
             _ancestors ??= [];
@@ -264,10 +268,12 @@
 
             // Duplicate reference of an object that was previously logged (or its descendant was
             // previously logged)
-            const alreadyLogged = _loggedObjs.includes(root);
-            if (alreadyLogged) {
-                console.log(...window.soupConsoleUtils._crawlObjectPathDisplay(_path), '(duplicate)');
-                return;
+            if (logDuplicates) {
+                const alreadyLogged = _loggedObjs.includes(root);
+                if (alreadyLogged) {
+                    console.log(...window.soupConsoleUtils._crawlObjectPathDisplay(_path), '(duplicate)');
+                    return;
+                }
             }
 
             // Other duplicate reference
