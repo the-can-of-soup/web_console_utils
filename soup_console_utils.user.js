@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Soup's JS Console Utils
 // @namespace    https://github.com/the-can-of-soup
-// @version      1.8.1
+// @version      1.8.2
 // @description  Miscellaneous helpful JS utilities for browser consoles.
 // @author       the-can-of-soup
 // @match        https://*/*
@@ -233,9 +233,9 @@
             return pathDisplay;
         },
 
-        crawlObject(root, handler, options = {}, _path = null, _ancestors = null, _loggedObjs = null) {
+        crawlObject(root, handler, options = {}, _path = null, _ancestors = null, _discovered = null, _loggedObjs = null) {
             const {inherited = true, nonenumerable = true, getters = false, prototypes = false, maxDepth = null} = options;
-            // Recursively crawl an object's properties and call a handler for each. Cyclical
+            // Recursively crawl an object's properties and call a handler for each. Duplicate
             // references to objects are skipped, so self-referential objects may be safely crawled.
             //
             // - `root`: Object to crawl.
@@ -244,8 +244,8 @@
             //   - `path`: Array of keys to get to the value from the root, ordered from shallow to
             //     deep.
             //   - Return: If true, the value and path are logged to the console. Once an object is
-            //     logged once, duplicate occurrences of that object will be logged with a "duplicate"
-            //     label, but not crawled.
+            //     logged once, duplicate references to that object or its ancestors will be logged
+            //     with a "duplicate" label, but still not crawled.
             // - `options`: Options for what to include:
             //   - `inherited`: Whether to crawl inherited properties.
             //   - `nonenumerable`: Whether to crawl non-enumerable properties. `__proto__` is never
@@ -259,25 +259,34 @@
 
             _path ??= [];
             _ancestors ??= [];
+            _discovered ??= [];
             _loggedObjs ??= [];
 
-            // Cyclical reference
-            if (_ancestors.includes(root)) return;
-
+            // Duplicate reference of an object that was previously logged (or its descendant was
+            // previously logged)
             const alreadyLogged = _loggedObjs.includes(root);
             if (alreadyLogged) {
                 console.log(...window.soupConsoleUtils._crawlObjectPathDisplay(_path), '(duplicate)');
                 return;
             }
+
+            // Other duplicate reference
+            if (_discovered.includes(root)) return;
             
             const shouldLog = handler(root, _path);
             if (shouldLog) {
                 console.log(...window.soupConsoleUtils._crawlObjectPathDisplay(_path), '=', root);
+
+                for (let ancestor of ancestors) {
+                    if (!_loggedObjs.includes(ancestor)) _loggedObjs.push(ancestor);
+                }
                 _loggedObjs.push(root);
             }
 
             if (typeof root !== 'object' || root === null) return;
             if (maxDepth !== null && _path.length >= maxDepth) return;
+
+            _discovered.push(root);
 
             for (const key of inherited ? window.soupConsoleUtils.getAllPropertyNames(root) : Object.getOwnPropertyNames(root)) {
                 let value;
@@ -303,13 +312,13 @@
                     value = root[key];
                 }
 
-                window.soupConsoleUtils.crawlObject(value, handler, options, subPath, _ancestors.concat([root]), _loggedObjs);
+                window.soupConsoleUtils.crawlObject(value, handler, options, subPath, _ancestors.concat([root]), _discovered, _loggedObjs);
             }
 
             if (prototypes) {
                 const value = Object.getPrototypeOf(root);
                 const subPath = _path.concat([null]);
-                window.soupConsoleUtils.crawlObject(value, handler, options, subPath, _ancestors.concat([root]), _loggedObjs);
+                window.soupConsoleUtils.crawlObject(value, handler, options, subPath, _ancestors.concat([root]), _discovered, _loggedObjs);
             }
         },
 
