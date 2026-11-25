@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Soup's JS Console Utils
 // @namespace    https://github.com/the-can-of-soup
-// @version      1.7.0
+// @version      1.8.0
 // @description  Miscellaneous helpful JS utilities for browser consoles.
 // @author       the-can-of-soup
 // @match        https://*/*
@@ -233,10 +233,10 @@
             return pathDisplay;
         },
 
-        crawlObject(root, handler, options = {}, _path = null, _discovered = null) {
+        crawlObject(root, handler, options = {}, _path = null, _ancestors = null) {
             const {inherited = true, nonenumerable = true, getters = false, prototypes = false, maxDepth = null} = options;
-            // Recursively crawl an object's properties and call a handler for each. Duplicate objects
-            // are skipped, so self-referential objects may be safely crawled.
+            // Recursively crawl an object's properties and call a handler for each. Cyclical
+            // references to objects are skipped, so self-referential objects may be safely crawled.
             //
             // - `root`: Object to crawl.
             // - `handler`: Function to call for each property. It is passed two arguments:
@@ -248,17 +248,18 @@
             //   - `inherited`: Whether to crawl inherited properties.
             //   - `nonenumerable`: Whether to crawl non-enumerable properties. `__proto__` is never
             //     crawled, even if this is true.
-            //   - `getters`: Whether to crawl properties with `get` handlers. If 'log', errors in
-            //     `get` handlers are also logged as warnings.
+            //   - `getters`: Whether to crawl properties with `get` handlers. If 'logErrors', errors
+            //     in `get` handlers are also logged as warnings.
             //   - `prototypes`: Whether to crawl prototypes of objects. This step in the `path`
             //     passed to `handler` is represented by `null`.
             //   - `maxDepth`: Maximum depth of the search; values at this depth are handled, but no
             //     deeper. Null removes the limit.
 
             _path ??= [];
-            _discovered ??= [];
+            _ancestors ??= [];
 
-            if (_discovered.includes(root)) return;
+            // Cyclical reference
+            if (_ancestors.includes(root)) return;
 
             const shouldLog = handler(root, _path);
             if (shouldLog) {
@@ -266,8 +267,6 @@
             }
 
             if (typeof root !== 'object' || root === null) return;
-            _discovered.push(root);
-
             if (maxDepth !== null && _path.length >= maxDepth) return;
 
             for (const key of inherited ? window.soupConsoleUtils.getAllPropertyNames(root) : Object.getOwnPropertyNames(root)) {
@@ -285,7 +284,7 @@
                     try {
                         value = root[key];
                     } catch (err) {
-                        if (getters === 'log') {
+                        if (getters === 'logErrors') {
                             console.warn(...window.soupConsoleUtils._crawlObjectPathDisplay(subPath), ': getter error:', err);
                         }
                         continue;
@@ -294,13 +293,13 @@
                     value = root[key];
                 }
 
-                window.soupConsoleUtils.crawlObject(value, handler, options, subPath, _discovered);
+                window.soupConsoleUtils.crawlObject(value, handler, options, subPath, _ancestors.concat([root]));
             }
 
             if (prototypes) {
                 const value = Object.getPrototypeOf(root);
                 const subPath = _path.concat([null]);
-                window.soupConsoleUtils.crawlObject(value, handler, options, subPath, _discovered);
+                window.soupConsoleUtils.crawlObject(value, handler, options, subPath, _ancestors.concat([root]));
             }
         },
 
